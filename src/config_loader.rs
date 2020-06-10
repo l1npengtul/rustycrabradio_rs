@@ -32,7 +32,7 @@ pub fn get_config() -> BotConfig{
         }
     }
     let bret = BotConfig{
-        discord_api: discord_api;
-    }
+        discord_api: discord_api,
+    };
     bret
 }
