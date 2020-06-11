@@ -3,16 +3,31 @@
 // returns a BotConfig type variable
 use std::fs::File;
 use std::io::prelude::*;
+use tokio_postgres::{NoTls, Error, Row};
 
 pub struct BotConfig{
     discord_api : String,
 }
-
 impl BotConfig {
     pub fn get_discord_api(&self) -> &String{
         &self.discord_api
     }
+}
 
+pub async fn get_query(host : &str, usr : &str, query : &str, param : &str) -> Result<Vec<Row>, Error>{
+    // Connect to PostgreSQL
+    let (client, connection) = tokio_postgres::connect("host="+host+" user="+usr, NoTls).await?;
+
+    // Spawn the tokio thread since the connection does its own thing and talks to the DB
+    tokio::spawn(async move {
+        if let Err(e) = connection.await{
+            eprintln!("PostgreSQL Connection Error: {}", e);
+        }
+    });
+
+    let rows = client.query(query, &[&param]).await?;
+
+    Ok(rows)
 }
 
 // NOTE: Using .unwrap() will cause an unrecoverable error (panic!) if the file is not found

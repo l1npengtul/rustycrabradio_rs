@@ -30,7 +30,7 @@ use std::sync::mpsc::channel;
 
 mod config_loader;
 
-// IntelliJ is so slow i want to cri
+// IntelliJ-Rust is so slow i want to cri
 // I cri everi tiem
 
 
@@ -339,7 +339,7 @@ async fn play(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult{
         },
     };
 
-    //Automatically Join the VoiceCHannel the user is in
+    // Automatically Join the VoiceCHannel the user is in
     let user_to_isekai = &msg.author;
     let user_voice_channel = user_to_isekai.
 
@@ -391,17 +391,78 @@ async fn search(ctx : &Context, msg: &Message, args: Args){
 }
 
 #[command]
+#[only_in(guilds)]
+// Initiates a Vote to Skip. Will get the total amount of people in a chat and only requires a set % of yes votes to skip
+// TODO: Make configurable
 async fn skip(ctx : &Context, msg: &Message, args: Args){
 
 }
 
 #[command]
-async fn ping(ctx : &Context, msg: &Message){
+#[only_in(guilds)]
+// Only admins can call this command, if they are not an admin they will not get a response
+#[required_permissions("ADMINISTRATOR")]
+//force skips current song
+async fn fskip(ctx : &Context, msg: &Message, args: Args) -> CommandResult{
 
+}
+
+#[command]
+#[only_in(guilds)]
+#[required_permissions("ADMINISTRATOR")]
+async fn ban_term(ctx : &Context, msg: &Message, args: Args){
+
+}
+
+#[command]
+#[only_in(guilds)]
+#[required_permissions("ADMINISTRATOR")]
+async fn ban_link(ctx : &Context, msg: &Message, args: Args){
+
+}
+
+#[command]
+#[only_in(guilds)]
+async fn list_banned(ctx : &Context, msg: &Message){
+
+}
+
+#[command]
+async fn ping(ctx : &Context, msg: &Message){
+    let i_love_emilia = ctx.data.lock();
+
+    let shard_mgmt = match i_love_emilia.get::<ShardManagerContainer>() {
+        Some(value) => value,
+        None => {
+            let _this_is_unused_stfu_compiler_you_boomer = msg.reply(&ctx.http, "Error: Could not get the shard manager.");
+
+            Ok(())
+        },
+    };
+    let manager = shard_manager.lock();
+    let runners = manager.runners.lock();
+
+    let runner = match runners.get(&ShardId(ctx.shard_id)) {
+        Some(runner) => runner,
+        None => {
+            let _i_totally_dont_have_a_pixiv_account = msg.reply(&ctx.cache,"Error: No Shard was found.");
+
+            Ok(())
+        },
+    };
+
+    // stfu intellij its not mis-spelled
+    let _unused_unlike_my_emilia_hentai_collection = msg.reply(&ctx.cache,&format!("The shard latency is {:?}", runner.latency));
 }
 
 fn chk_log(result: SerenityResult<Message>) {
     if let Err(why) = result {
         eprintln!("Error sending message: {:?}", why);
     }
+}
+
+
+// So both search and play go here, this will activate the lavalink player
+async fn play_music(){
+
 }
