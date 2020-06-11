@@ -9,6 +9,8 @@ edition = "2018"
 [dependencies]
 chrono = "0.4"
 typemap = "0.3"
+dashmap = "3.11.4"
+
 
 [dependencies.serenity-lavalink]
 git = "https://gitlab.com/nitsuga5124/serenity-lavalink/"
