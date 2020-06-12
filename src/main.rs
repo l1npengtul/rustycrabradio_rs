@@ -27,12 +27,16 @@ use serenity_lavalink::{
 };
 use tokio::sync::RwLock;
 use std::sync::mpsc::channel;
+use serenity::model::prelude::GuildId;
 
 mod config_loader;
 
 // IntelliJ-Rust is so slow i want to cri
 // I cri everi tiem
 
+struct SearchBoxMessage{
+
+}
 
 struct Lavalink;
 
@@ -348,35 +352,9 @@ async fn play(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult{
     let mut mgmt = mg_lc.lock().await;
 
     if let Some(handler) = mgmt.get_mut(why_are_they_called_guilds_and_not_servers) {
-        let data = ctx.data.read().await;
-        let lava_lock = data.get::<Lavalink>().expect("Error: No Lavalink in TypeMap");
-        let mut lava_client = lava_lock.write().await;
 
-        let query_information = lava_client.auto_search_tracks(&query).await?;
-
-        if query_information.tracks.is_empty() {
-            check_msg(msg.channel_id.say(&ctx, "Could not find any video of the search query.").await);
-            return Ok(());
-        }
-
-        {
-            let node = lava_client.nodes.get_mut(&why_are_they_called_guilds_and_not_servers).unwrap();
-
-            node.play(query_information.tracks[0].clone())
-                //.start_time(Duration::from_secs(61))
-                //.replace(true)
-                .queue();
-        }
-        let node = lava_client.nodes.get(&why_are_they_called_guilds_and_not_servers).unwrap();
-
-        if !lava_client.loops.contains(&why_are_they_called_guilds_and_not_servers) {
-            node.start_loop(Arc::clone(lava_lock), Arc::new(handler.clone())).await;
-        }
-
-        check_msg(msg.channel_id.say(&ctx.http, format!("Added to queue: {}", query_information.tracks[0].info.title)).await);
-    } else {
-        check_msg(msg.channel_id.say(&ctx.http, "Use `~join` first, to connect the bot to your current voice channel.").await);
     }
+
     Ok(())
 
 
@@ -452,7 +430,7 @@ async fn ping(ctx : &Context, msg: &Message){
     };
 
     // stfu intellij its not mis-spelled
-    let _unused_unlike_my_emilia_hentai_collection = msg.reply(&ctx.cache,&format!("The shard latency is {:?}", runner.latency));
+    let _emilia_hentai = msg.reply(&ctx.cache,&format!("The shard latency is {:?}", runner.latency));
 }
 
 fn chk_log(result: SerenityResult<Message>) {
@@ -463,6 +441,66 @@ fn chk_log(result: SerenityResult<Message>) {
 
 
 // So both search and play go here, this will activate the lavalink player
-async fn play_music(){
+async fn play_music(ctx : &mut Context, why_are_they_called_guilds_and_not_servers : GuildId, query : &String)->bool{
+    let data = ctx.data.read().await;
+    let lava_lock = data.get::<Lavalink>().expect("Error: No Lavalink in TypeMap");
+    let mut lava_client = lava_lock.write().await;
+
+    let query_information = lava_client.auto_search_tracks(&query).await?;
+
+    if query_information.tracks.is_empty() {
+        check_msg(msg.channel_id.say(&ctx, "Could not find any video of the search query.").await);
+        false
+    }
+
+    {
+        let node = lava_client.nodes.get_mut(&why_are_they_called_guilds_and_not_servers).unwrap();
+        node.play(query_information.tracks[0].clone()).queue();
+    }
+    let node = lava_client.nodes.get(&why_are_they_called_guilds_and_not_servers).unwrap();
+
+    // start looping if there is nothing in there
+    if !lava_client.loops.contains(&why_are_they_called_guilds_and_not_servers) {
+        node.start_loop(Arc::clone(lava_lock), Arc::new(handler.clone())).await;
+    }
+    check_msg(msg.channel_id.say(&ctx.http, format!("Added to queue: {}", query_information.tracks[0].info.title)).await);
+    true
+}
+
+async fn join_channel(ctx : &mut Context, msg : &Message) -> bool{
+    let guild_not_server_id = match msg.guild(&ctx.cache).await{
+        Some(guild) => guild,
+        None => {
+            chk_log(msg.reply(&ctx.http, "Error: You need to be in a Guild!").await);
+            Ok(())
+        }
+    };
+
+    let guild_id = guild_not_server_id.id;
+
+    let vc_channel_id = guild_not_server_id.voice_states.get(&msg.author.id).and_then(|voice_state| voice_state.channel_id);
+
+    let connect_vc = match vc_channel_id{
+        Some(vc)=>vc,
+        None=>{
+            chk_log(msg.reply(&ctx.http, "Error: You are not currently in a Voice Channel!").await);
+            false
+        }
+    };
+
+    let lck = ctx.data.read().await.get::<VoiceManager>().cloned().expect("Error: Expected VoiceManager in typemap.");
+    let mut manager = lck.lock().await;
+
+    if manager.join(guild_id, vc_channel_id).is_some() {
+        let data = ctx.data.read().await;
+        let lava_client_lock = data.get::<Lavalink>().expect("Error: Expected a lavalink client in TypeMap");
+        let mut lava_client = lava_client_lock.write().await;
+        Node::new(&mut lava_client, guild_id, msg.channel_id);
+    } else {
+        check_msg(msg.channel_id.say(&ctx.http, "Error joining the channel").await);
+        false
+    }
+    true
+
 
 }
