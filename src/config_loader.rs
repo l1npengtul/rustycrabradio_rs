@@ -16,7 +16,7 @@ impl BotConfig {
 
 pub async fn get_query(host : &str, usr : &str, query : &str, param : &str) -> Result<Vec<Row>, Error>{
     // Connect to PostgreSQL
-    let (client, connection) = tokio_postgres::connect("host="+host+" user="+usr, NoTls).await?;
+    let (client, connection) = tokio_postgres::connect(format!("host={} user={}",host,usr).as_str(), NoTls).await?;
 
     // Spawn the tokio thread since the connection does its own thing and talks to the DB
     tokio::spawn(async move {
@@ -47,7 +47,7 @@ pub fn get_config() -> BotConfig{
         }
     }
     let bret = BotConfig{
-        discord_api: discord_api,
+        discord_api,
     };
     bret
 }
