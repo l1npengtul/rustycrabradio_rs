@@ -4,6 +4,9 @@
 use std::fs::File;
 use std::io::prelude::*;
 use tokio_postgres::{NoTls, Error, Row};
+use toml;
+use serde_derive::{Deserialize, Serialize};
+
 
 pub struct BotConfig{
     discord_api : String,
@@ -13,6 +16,10 @@ impl BotConfig {
         &self.discord_api
     }
 }
+
+#[derive(Serialize)]
+#[derive(Deserialize)]
+struct
 
 pub async fn get_query(host : &str, usr : &str, query : &str, param : &str) -> Result<Vec<Row>, Error>{
     // Connect to PostgreSQL
@@ -30,24 +37,8 @@ pub async fn get_query(host : &str, usr : &str, query : &str, param : &str) -> R
     Ok(rows)
 }
 
-// NOTE: Using .unwrap() will cause an unrecoverable error (panic!) if the file is not found
-pub fn get_config() -> BotConfig{
-    let mut cfg_file = File::open("bot.cfg").unwrap();
-    let mut contents = String::new();
+// NOTE:                        if file isnt found => Create empty bot.toml file
+//       if it is invalid or some other file error => panic!
+pub fn get_config() -> Option<BotConfig>{
 
-    cfg_file.read_to_string(&mut contents);
-
-    let mut cfg_lines = contents.lines();
-    let mut discord_api : String = String::from("");
-
-    for l in cfg_lines{
-        let mut line_split = l.split("=");
-        match line_split[0].as_str(){
-            "DISC_API"=>discord_api = line_split[1],
-        }
-    }
-    let bret = BotConfig{
-        discord_api,
-    };
-    bret
 }

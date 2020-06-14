@@ -251,6 +251,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
 
 }
 
+//TODO: implement these commands
 
 #[command]
 #[only_in(guilds)]
@@ -261,7 +262,7 @@ async fn search(ctx : &Context, msg: &Message, args: Args)->CommandResult{
 #[command]
 #[only_in(guilds)]
 // Initiates a Vote to Skip. Will get the total amount of people in a chat and only requires a set % of yes votes to skip
-// TODO: Make configurable
+// TODO: Make vote % configurable
 async fn skip(ctx : &Context, msg: &Message, args: Args)->CommandResult{
     Ok(())
 }
@@ -311,37 +312,30 @@ async fn list_banned(ctx : &Context, msg: &Message)->CommandResult{
 
 #[command]
 async fn ping(ctx: &Context, msg: &Message) ->CommandResult {
-    let mut ctx_clone = ctx.clone();
-    let i_love_emilia =  match ctx_clone.data.lock().await {
-        Ok(emt) => emt,
-        Err(why) => {
-            chk_log(msg.reply(&ctx.http,"Error: Could not read the Context Data").await);
-            return Ok(());
-        }
+    let data = ctx.data.read().await;
 
-    };
-
-    let shard_mgmt = match i_love_emilia.get::<ShardManagerContainer>() {
-        Some(value) => value,
+    let shard_manager = match data.get::<ShardManagerContainer>() {
+        Some(v) => v,
         None => {
-            let _this_is_unused_stfu_compiler_you_boomer = msg.reply(&ctx.http, "Error: Could not get the shard manager.");
+            let _ = chk_log(msg.reply(&ctx.http,"There was a problem getting the shard manager").await);
 
-            Ok(())
+            return Ok(());
         },
     };
-    let manager = shard_mgmt.lock();
-    let runners = manager.runners.lock();
+    let manager = shard_manager.lock().await;
+    let runners = manager.runners.lock().await;
 
     let runner = match runners.get(&ShardId(ctx.shard_id)) {
-        Ok(runner) => runner,
-        Err(why) => {
-            println!("Error: Could not get message {:?}", why);
-            Err(())
+        Some(runner) => runner,
+        None => {
+            eprintln!("Error: Could not get message, Shard retrieval most likely failed.");
+            return Ok(());
         },
     };
 
     // stfu intellij its not mis-spelled
-    let _emilia_hentai = msg.reply(&ctx.cache,&format!("The shard latency is {:?}", runner.latency));
+    let _emilia_hentai = msg.reply(&ctx.http,&format!("The shard latency is {:?}", runner.latency));
+    Ok(())
 }
 
 fn chk_log(result: SerenityResult<Message>) {
@@ -370,6 +364,7 @@ async fn play_music(ctx : &Context,msg:&Message, query : &String)->bool{
     };
 
     let guild_id = guild_not_server_id.id;
+    // intelliJ can you fuck off its not wrong the compiler says its fine REEEEEEEEEEEE
     let manager_lock = ctx.data.read().await
         .get::<VoiceManager>().cloned().expect("Expected VoiceManager in TypeMap.");
     let mut manager = manager_lock.lock().await;
