@@ -6,16 +6,23 @@ use std::io::prelude::*;
 use tokio_postgres::{NoTls, Error, Row};
 use toml;
 use serde_derive::{Deserialize, Serialize};
+use std::error::Error;
 
 
 pub struct BotConfig{
     discord_api : String,
+    detailed_network : bool,
+    detailed_debug : bool,
+    banned_words : Vector<String>,
+    banned_links : Vector<String>
 }
 impl BotConfig {
     pub fn get_discord_api(&self) -> &String{
         &self.discord_api
     }
 }
+
+
 
 #[derive(Serialize)]
 #[derive(Deserialize)]
@@ -41,24 +48,56 @@ pub async fn get_query(host : &str, usr : &str, query : &str, param : &str) -> R
 /*
 title="bot config file"
 
+# hashtags indicate line comments
 # go to https://discord.com/developers/applications and make a bot
 # don't share this key with anyone but yourself
 [discord]
 discord_api=<API_KEY>
 
-#PostgreSQL
-[sql]
-user=""
-host=""
-
 [preferences]
-detailed_hw=true
+# true  => Network Congestion, Download/Upload Speed, Packet Loss, Ping
+# false => ping
 detailed_network=true
-detailed_
+# true  => Program RAM usage, CPU usage, Threads
+detailed_debug=true
+
+[globals]
+# banned search terms
+# lists go like ["term1","term2"]ㅋ
+banned_search=[]
+# note: use links
+# this is good: ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=F5oQoNMpqi8"]
+# this is no good: ["F5oQoNMpqi8", "dQw4w9WgXcQ", "hentai"]
+banned_links=[]
  */
 
 pub async fn generate_config_file(file_name: &str) ->std::io::Result<()>{
     let mut generated_file = File::create(file_name)?;
+    generated_file.write_all(r#"
+title="bot config file"
+
+# hashtags indicate line comments
+# go to https://discord.com/developers/applications and make a bot
+# don't share this key with anyone but yourself
+# replace <API_KEY> with the api key you got from discord
+[discord]
+discord_api=<API_KEY>
+
+[preferences]
+# true  => Network Congestion, Download/Upload Speed, Packet Loss, Ping
+# false => ping
+detailed_network=true
+# true  => Program RAM usage, CPU usage, Threads
+detailed_debug=true
+
+[globals]
+# banned search terms
+# lists go like ["term1", "term2"]
+banned_search=[]
+# note: use links
+# this is good: ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=F5oQoNMpqi8"]
+# this is no good: ["F5oQoNMpqi8", "dQw4w9WgXcQ", "hentai"]
+banned_links=[]"#.as_ref())
 }
 
 // NOTE:                        if file isnt found => Create empty bot.toml file
