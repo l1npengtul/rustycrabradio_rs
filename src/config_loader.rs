@@ -37,6 +37,30 @@ pub async fn get_query(host : &str, usr : &str, query : &str, param : &str) -> R
     Ok(rows)
 }
 
+// File write example
+/*
+title="bot config file"
+
+# go to https://discord.com/developers/applications and make a bot
+# don't share this key with anyone but yourself
+[discord]
+discord_api=<API_KEY>
+
+#PostgreSQL
+[sql]
+user=""
+host=""
+
+[preferences]
+detailed_hw=true
+detailed_network=true
+detailed_
+ */
+
+pub async fn generate_config_file(file_name: &str) ->std::io::Result<()>{
+    let mut generated_file = File::create(file_name)?;
+}
+
 // NOTE:                        if file isnt found => Create empty bot.toml file
 //       if it is invalid or some other file error => panic!
 pub fn get_config() -> Option<BotConfig>{
@@ -45,9 +69,7 @@ pub fn get_config() -> Option<BotConfig>{
         Err(why)=> {
             eprintln!("Error: No bot.toml file found. It has been generated for you, please fill it out!");
             let mut create_file = match File::create("bot.toml"){
-                Ok(()) => {
-
-                },
+                Ok(a) => a,
                 Err(why) => {
                     panic!("Error! Could not create bot.toml!");
                 }
@@ -55,5 +77,6 @@ pub fn get_config() -> Option<BotConfig>{
 
 
         }
+
     };
 }
