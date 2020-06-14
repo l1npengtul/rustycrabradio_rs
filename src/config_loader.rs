@@ -40,5 +40,20 @@ pub async fn get_query(host : &str, usr : &str, query : &str, param : &str) -> R
 // NOTE:                        if file isnt found => Create empty bot.toml file
 //       if it is invalid or some other file error => panic!
 pub fn get_config() -> Option<BotConfig>{
+    let toml_to_string = match File::open("bot.toml"){
+        Ok(s) => s,
+        Err(why)=> {
+            eprintln!("Error: No bot.toml file found. It has been generated for you, please fill it out!");
+            let mut create_file = match File::create("bot.toml"){
+                Ok(()) => {
 
+                },
+                Err(why) => {
+                    panic!("Error! Could not create bot.toml!");
+                }
+            };
+
+
+        }
+    };
 }
