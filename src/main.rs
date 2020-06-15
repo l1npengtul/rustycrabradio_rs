@@ -142,7 +142,12 @@ async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) -> (
 
 #[tokio::main]
 async fn main()-> Result<(), Box<dyn std::error::Error>> {
-    let config = config_loader::get_config();
+    let config = match config_loader::get_config().await{
+        Ok(cfg) => cfg,
+        Err(why) => {
+
+        }
+    }
     let disc_token = config.get_discord_api();
 
     let http = Http::new_with_token(&disc_token);
