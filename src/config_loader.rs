@@ -2,21 +2,27 @@
 // bot.cfg, and allows async read only access to the file
 // returns a BotConfig type variable
 use std::io::prelude::*;
-use tokio_postgres::{NoTls, Error, Row};
 use toml;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use std::error::Error;
-use tokio::fs;
-use tokio::prelude::*;
-use tokio::fs::File;
+use tokio::{
+    prelude::*,
+    fs,
+    fs::File,
+    io::{
+        self,
+        AsyncWriteExt,
+        AsyncReadExt
+    }
+};
 use std::path::Path;
 
 pub struct BotConfig{
-    discord_api : String,
-    detailed_network : bool,
-    detailed_debug : bool,
-    banned_words_global : Vector<String>,
-    banned_links_global : Vector<String>
+    pub(crate) discord_api : String,
+    pub(crate) detailed_network : bool,
+    pub(crate) detailed_debug : bool,
+    pub(crate) banned_words_global : Vec<String>,
+    pub(crate) banned_links_global : Vec<String>
 }
 impl BotConfig {
     pub fn get_discord_api(&self) -> &String{
@@ -29,7 +35,7 @@ impl BotConfig {
         &self.detailed_debug
     }
     pub async fn contains_word(&self, word : &str) -> &bool{
-        if &self.banned_words_global.contains(word){
+        if self.banned_words_global.contains(&word.to_string()){
             return &true;
         }
         else{
@@ -38,7 +44,7 @@ impl BotConfig {
         &false
     }
     pub async fn contains_link(&self, link : &str) -> &bool{
-        if &self.banned_links_global.contains(link){
+        if self.banned_links_global.contains(&link.to_string()){
             return &true;
         }
         else{
@@ -51,27 +57,25 @@ impl BotConfig {
 
 
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct Discord{
     discord_api : String,
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct Preferences{
     detailed_network : bool,
     detailed_debug : bool,
 }
 
-#[derive(Serialize)]
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct Globals{
     banned_search : Vec<String>,
     banned_links : Vec<String>,
 }
 
 
-#[derive(Serialize)]
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct Config{
     discord : Discord,
     preferences : Preferences,
@@ -132,16 +136,17 @@ banned_search=[]
 # note: use links
 # this is good: ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=F5oQoNMpqi8"]
 # this is no good: ["F5oQoNMpqi8", "dQw4w9WgXcQ", "hentai"]
-banned_links=[]"#.as_ref())
+banned_links=[]"#.as_ref()).await?;
+    Ok(())
 }
 
 // NOTE:                        if file isnt found => Create empty bot.toml file
 //       if it is invalid or some other file error => panic!
-pub async fn get_config() -> Result<BotConfig, ()>{
-    let mut cfg_content = fs::read_to_string("bot.toml").await?;
+pub async fn get_config() -> Result<BotConfig, std::io::Error>{
+    let mut cfg_content = tokio::fs::read_to_string("bot.toml").await?;
 
     // note: this will panic if bot.toml is wrong
-    let bot_config : Config = toml::from_str(cfg_content).unwrap();
+    let bot_config : Config = toml::from_str(&cfg_content).unwrap();
     let return_cfg : BotConfig = BotConfig{
         discord_api : bot_config.discord.discord_api,
         detailed_network : bot_config.preferences.detailed_network,
@@ -152,16 +157,18 @@ pub async fn get_config() -> Result<BotConfig, ()>{
     Ok(return_cfg)
 }
 
-pub async fn generate_bot_toml() -> Result<(),&str>{
+pub async fn generate_bot_toml() -> Result<(),String>{
     let who_is_rem = Path::new("bot.toml").exists();
     if who_is_rem{
-        return Err("Error: File already exists in FileSystem!");
+        return Err("Error: File already exists in FileSystem!".to_string());
     }
     else{
         if let Err(why) = generate_config_file("bot.toml").await{
             eprintln!("Error while creating bot.toml: {:?}", why);
-            return Err(why);
+            return Err(format!("{:?}",why));
         }
     }
     Ok(())
 }
+
+pub fn l1npengtul()->u8{2}

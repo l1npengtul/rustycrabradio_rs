@@ -12,7 +12,7 @@ use serenity::{
     client::bridge::gateway::{ShardId, ShardManager},
     framework::standard::{
         Args, CheckResult, CommandOptions, CommandResult, CommandGroup,
-        DispatchError,HelpBehaviour, help_commands, StandardFramework,
+        DispatchError,HelpBehaviour, help_commands, StandardFramework,HelpOptions,
         macros::{command, group, help, check, hook},
     },
     http::Http,
@@ -32,6 +32,7 @@ use serenity_lavalink::{
 use std::sync::mpsc::channel;
 use serenity::model::prelude::GuildId;
 use tokio;
+use crate::config_loader::generate_bot_toml;
 
 
 mod config_loader;
@@ -71,6 +72,7 @@ impl EventHandler for Handler {
         println!("{} is connected!", ready.user.name);
     }
 }
+
 
 // Command Groups
 #[group]
@@ -145,9 +147,18 @@ async fn main()-> Result<(), Box<dyn std::error::Error>> {
     let config = match config_loader::get_config().await{
         Ok(cfg) => cfg,
         Err(why) => {
-
+            eprintln!("Error: Error loading bot.toml: {:?}", why);
+            let _bot_toml_is_a_lie = generate_bot_toml().await?;
+            let return_cfg : config_loader::BotConfig = config_loader::BotConfig{
+                discord_api : "".to_string(),
+                detailed_network : false,
+                detailed_debug : false,
+                banned_links_global : vec![String::from("a"),String::from("b")],
+                banned_words_global : vec![String::from("a"),String::from("b")],
+            };
+            return_cfg
         }
-    }
+    };
     let disc_token = config.get_discord_api();
 
     let http = Http::new_with_token(&disc_token);
@@ -168,7 +179,22 @@ async fn main()-> Result<(), Box<dyn std::error::Error>> {
         Ok(id)=>id.id,
         Err(why) => panic!("Error: Could not get the user connected info: {:?}", why),
     };
-    let mut client = Client::new(config.get_discord_api()).event_handler(Handler).await.expect("Error Creating Client");
+
+    let client_framwork = StandardFramework::new()
+        .configure(|c| c
+            .on_mention(Option::from(bot_id))
+            // TODO: make prefix configurable
+            .prefix("m!")
+            .delimiters(vec![", ", ","])
+        )
+        .before(before)
+        .after(after)
+        .unrecognised_command(unknown_command)
+        .on_dispatch_error(dispatch_error)
+        .group(&MUSIC_GROUP)
+        .group(&OTHER_GROUP);
+
+    let mut client = Client::new(config.get_discord_api()).event_handler(Handler).framework(client_framwork).await.expect("Error Creating Client");
     {
         let mut data = client.data.write().await;
         data.insert::<VoiceManager>(Arc::clone(&client.voice_manager));
@@ -219,7 +245,6 @@ basic command template, ur welcome future lewis
 #[command]
 //servers (guilds) only
 #[only_in(guilds)]
-#[min_args(1)]
 async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
     let i_love_emilia = args.message().to_string();
 
@@ -235,8 +260,11 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
     let mut mgmt = mg_lc.lock().await;
 
     if let Some(handler) = mgmt.get_mut(why_are_they_called_guilds_and_not_servers) {
+        println!("a");
         if join_channel(ctx,msg).await{
+            println!("b");
             if play_music(ctx,msg, &i_love_emilia).await{
+                println!("c");
                 return Ok(());
             }
             else{
@@ -339,7 +367,7 @@ async fn ping(ctx: &Context, msg: &Message) ->CommandResult {
     };
 
     // stfu intellij its not mis-spelled
-    let _emilia_hentai = msg.reply(&ctx.http,&format!("The shard latency is {:?}", runner.latency));
+    let _emilia_hentai = msg.reply(&ctx.http,format!("The shard latency is {:?}", runner.latency));
     Ok(())
 }
 
@@ -351,6 +379,7 @@ fn chk_log(result: SerenityResult<Message>) {
 
 // So both search and play go here, this will activate the lavalink player
 async fn play_music(ctx : &Context,msg:&Message, query : &String)->bool{
+    println!("play_music");
     let data = ctx.data.read().await;
     let lava_lock = data.get::<Lavalink>().expect("Error: No Lavalink in TypeMap");
     let mut lava_client = lava_lock.write().await;
@@ -417,6 +446,7 @@ async fn play_music(ctx : &Context,msg:&Message, query : &String)->bool{
 }
 
 async fn join_channel(ctx : &Context, msg : &Message) -> bool{
+    println!("join_channel");
     let guild_not_server_id = match msg.guild(&ctx.cache).await{
         Some(guild) => guild,
         None => {
