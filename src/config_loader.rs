@@ -19,6 +19,7 @@ use std::path::Path;
 
 pub struct BotConfig{
     pub(crate) discord_api : String,
+    pub(crate) discord_prefix : String,
     pub(crate) detailed_network : bool,
     pub(crate) detailed_debug : bool,
     pub(crate) banned_words_global : Vec<String>,
@@ -60,6 +61,7 @@ impl BotConfig {
 #[derive(Serialize, Deserialize, Debug)]
 struct Discord{
     discord_api : String,
+    discord_prefix : String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -121,6 +123,7 @@ title="bot config file"
 # replace <API_KEY> with the api key you got from discord, and enclose them in ""
 [discord]
 discord_api=<API_KEY>
+prefix=""
 
 [preferences]
 # true  => Network Congestion, Download/Upload Speed, Packet Loss, Ping

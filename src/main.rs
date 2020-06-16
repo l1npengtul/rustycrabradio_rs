@@ -37,6 +37,8 @@ use std::time::Duration;
 
 
 mod config_loader;
+mod server_thread;
+mod thread_interfacer;
 
 // IntelliJ-Rust is so slow i want to cri
 // I cri everi tiem
@@ -152,6 +154,7 @@ async fn main()-> Result<(), Box<dyn std::error::Error>> {
             let _bot_toml_is_a_lie = generate_bot_toml().await?;
             let return_cfg : config_loader::BotConfig = config_loader::BotConfig{
                 discord_api : "".to_string(),
+                discord_prefix : "".to_string(),
                 detailed_network : false,
                 detailed_debug : false,
                 banned_links_global : vec![String::from("a"),String::from("b")],
@@ -185,7 +188,7 @@ async fn main()-> Result<(), Box<dyn std::error::Error>> {
         .configure(|c| c
             .on_mention(Option::from(bot_id))
             // TODO: make prefix configurable
-            .prefix("m!")
+            .prefix(config.discord_prefix.as_ref())
             .delimiters(vec![", ", ","])
         )
         .before(before)
