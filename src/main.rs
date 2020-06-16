@@ -203,7 +203,7 @@ async fn main()-> Result<(), Box<dyn std::error::Error>> {
 
         let mut lava_client = LavalinkClient::new();
         lava_client.bot_id = bot_id;
-        lava_client.initialize().await.unwrap();
+        lava_client.initialize().await?;
         data.insert::<Lavalink>(Arc::new(tokio::sync::RwLock::new(lava_client)));
 
     }
