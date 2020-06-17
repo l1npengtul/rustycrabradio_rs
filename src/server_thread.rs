@@ -2,11 +2,25 @@
 // architecture from the main -> server thread.
 
 use std::thread;
-use std::sync::mpsc::{channel, Receiver, Sender};
+use crossbeam::crossbeam_channel::{unbounded, Receiver, Sender};
 use crate::thread_interfacer::CommunicationType;
+use serenity::prelude::Context;
+use serenity::model::prelude::Message;
 
 
-// intelliJ, can you shut the fuck up, im using 2018 already godammit
-pub async fn music_play_thread(thread_name : String, mspc_recv : Receiver<CommunicationType>, mspc_tran : Sender<CommunicationType>){
-    
+pub async fn music_play_thread(ctx: Context, msg : Message, thread_name : String, data_recv : Receiver<CommunicationType>, data_send : Sender<CommunicationType>){
+    let mut thread_st_aaaaaaaaaaaaaay_alive: bool = true;
+    let mut queue = Vec::new();
+    while thread_st_aaaaaaaaaaaaaay_alive {
+        let msg_recv = match data_recv.recv() {
+            Ok(com) => com,
+            Err(why) => {
+                // do nothing if there are no messages
+            }
+        };
+        // TODO: implement a check to see if message is for thread or not
+
+
+
+    }
 }

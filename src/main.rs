@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate serenity;
 extern crate typemap;
+extern crate crossbeam;
 
 use std::{collections::{HashMap, HashSet}, sync::Arc};
 use serenity::{

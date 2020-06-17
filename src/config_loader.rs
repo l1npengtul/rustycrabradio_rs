@@ -16,6 +16,8 @@ use tokio::{
     }
 };
 use std::path::Path;
+use reqwest;
+use std::collections::HashMap;
 
 pub struct BotConfig{
     pub(crate) discord_api : String,
@@ -23,7 +25,8 @@ pub struct BotConfig{
     pub(crate) detailed_network : bool,
     pub(crate) detailed_debug : bool,
     pub(crate) banned_words_global : Vec<String>,
-    pub(crate) banned_links_global : Vec<String>
+    pub(crate) banned_links_global : Vec<String>,
+    pub(crate) youtube_api : String,
 }
 impl BotConfig {
     pub fn get_discord_api(&self) -> &String{
@@ -56,6 +59,22 @@ impl BotConfig {
 
 }
 
+pub struct Video {
+    title : String,
+    link : String,
+    author_name : String,
+}
+impl Video{
+    pub async fn new(link : &str) -> Result<Self,reqwest::Error>{
+        let json_normal = reqwest::get(link).await?.json::<HashMap<String, String>>().await?;
+        Ok(Video{
+            title: json_normal.get("title"),
+            link: link.to_string(),
+            author_name: json_normal.get("author_name"),
+        })
+    }
+}
+
 
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -76,12 +95,18 @@ struct Globals{
     banned_links : Vec<String>,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct Youtube{
+    youtube_api : String,
+}
+
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Config{
     discord : Discord,
     preferences : Preferences,
     globals : Globals,
+    youtube : Youtube,
 }
 
 // File write example
@@ -139,9 +164,16 @@ banned_search=[]
 # note: use links
 # this is good: ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=F5oQoNMpqi8"]
 # this is no good: ["F5oQoNMpqi8", "dQw4w9WgXcQ", "hentai"]
-banned_links=[]"#.as_ref()).await?;
+banned_links=[]
+
+[youtube]
+# Youtube API Key
+youtube_api=""
+"#.as_ref()).await?;
     Ok(())
 }
+
+
 
 // NOTE:                        if file isnt found => Create empty bot.toml file
 //       if it is invalid or some other file error => panic!
@@ -149,13 +181,15 @@ pub async fn get_config() -> Result<BotConfig, std::io::Error>{
     let mut cfg_content = tokio::fs::read_to_string("bot.toml").await?;
 
     // note: this will panic if bot.toml is wrong
-    let bot_config : Config = toml::from_str(&cfg_content).unwrap();
+    let read_cfg : Config = toml::from_str(&cfg_content).unwrap();
     let return_cfg : BotConfig = BotConfig{
-        discord_api : bot_config.discord.discord_api,
-        detailed_network : bot_config.preferences.detailed_network,
-        detailed_debug : bot_config.preferences.detailed_debug,
-        banned_links_global : bot_config.globals.banned_links,
-        banned_words_global : bot_config.globals.banned_search,
+        discord_api : read_cfg.discord.discord_api,
+        discord_prefix: "".to_string(),
+        detailed_network : read_cfg.preferences.detailed_network,
+        detailed_debug : read_cfg.preferences.detailed_debug,
+        banned_links_global : read_cfg.globals.banned_links,
+        banned_words_global : read_cfg.globals.banned_search,
+        youtube_api : read_cfg.youtube.youtube_api,
     };
     Ok(return_cfg)
 }

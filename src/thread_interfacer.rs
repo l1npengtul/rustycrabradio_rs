@@ -1,3 +1,5 @@
+use serenity::prelude::Context;
+use serenity::model::prelude::Message;
 
 pub enum CommunicationType{
     GetMusic,
@@ -9,6 +11,8 @@ pub enum SendRecv{
     Send,
     Recv,
 }
+
+
 
 pub struct ThreadCommunication {
     com_type : CommunicationType,
