@@ -18,6 +18,9 @@ use tokio::{
 use std::path::Path;
 use reqwest;
 use std::collections::HashMap;
+use youtube_dl;
+use youtube_dl::YoutubeDl;
+use youtube_dl::YoutubeDlOutput::{SingleVideo, Playlist};
 
 pub struct BotConfig{
     pub(crate) discord_api : String,
@@ -60,19 +63,33 @@ impl BotConfig {
 }
 
 pub struct Video {
-    title : String,
-    link : String,
-    author_name : String,
+    pub(crate) title : String,
+    pub(crate) link : String,
+    pub(crate) author_name : String,
+    pub(crate) duration : String,
+    pub(crate) thumbnail : String,
 }
 impl Video{
-    pub async fn new(link : &str) -> Result<Self,reqwest::Error>{
-        let json_normal = reqwest::get(link).await?.json::<HashMap<String, String>>().await?;
+    pub async fn new(link : &str) -> Result<Self, dyn Error>{
+        let video_ytdl = match YoutubeDl::new(link).run(){
+            Ok(v) => {
+                match v {
+                    SingleVideo(sv) => sv,
+                    Playlist(pl) => return Err(()),
+                }
+            },
+            Err(why)=>Err(why),
+        };
         Ok(Video{
-            title: json_normal.get("title"),
+            title: video_ytdl.title,
             link: link.to_string(),
-            author_name: json_normal.get("author_name"),
+            author_name: video_ytdl.uploader?,
+            duration: video_ytdl.end_time?,
+            thumbnail: video_ytdl.thumbnail?,
         })
     }
+
+
 }
 
 
