@@ -201,7 +201,7 @@ pub async fn get_config() -> Result<BotConfig, std::io::Error>{
     let read_cfg : Config = toml::from_str(&cfg_content).unwrap();
     let return_cfg : BotConfig = BotConfig{
         discord_api : read_cfg.discord.discord_api,
-        discord_prefix: "".to_string(),
+        discord_prefix : read_cfg.discord.discord_prefix,
         detailed_network : read_cfg.preferences.detailed_network,
         detailed_debug : read_cfg.preferences.detailed_debug,
         banned_links_global : read_cfg.globals.banned_links,

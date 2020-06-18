@@ -31,6 +31,9 @@ pub async fn music_play_thread(ctx: Context, msg : Message, thread_name : String
 
         // TODO: implement a check to see if message is for thread or not
 
+        queue.push(msg_recv);
+
+
 
 
     }

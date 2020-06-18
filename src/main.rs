@@ -160,6 +160,7 @@ async fn main()-> Result<(), Box<dyn std::error::Error>> {
                 detailed_debug : false,
                 banned_links_global : vec![String::from("a"),String::from("b")],
                 banned_words_global : vec![String::from("a"),String::from("b")],
+                youtube_api: "".to_string()
             };
             return_cfg
         }
