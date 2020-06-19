@@ -22,6 +22,7 @@ use youtube_dl;
 use youtube_dl::YoutubeDl;
 use youtube_dl::YoutubeDlOutput::{SingleVideo, Playlist};
 
+#[derive(Debug, Copy, Clone)]
 pub struct BotConfig{
     pub(crate) discord_api : String,
     pub(crate) discord_prefix : String,
@@ -62,6 +63,7 @@ impl BotConfig {
 
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct Video {
     pub(crate) title : String,
     pub(crate) link : String,

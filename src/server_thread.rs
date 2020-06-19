@@ -14,20 +14,27 @@ pub async fn music_play_thread(ctx: Context, msg : Message, thread_name : String
     let mut queue : Vec<Video> = Vec::new();
     while thread_st_aaaaaaaaaaaaaay_alive {
         let msg_recv = match data_recv.recv() {
-            Ok(com) => {
-                // Interpret Communication
-                match com.com_type {
-                    GetMusic=> {
-                        if let Some(v) = queue.get(0){
-                            data_send.send(v);
-                        }
-                    }
-                }
-            },
+            Ok(com) => com,
             Err(why) => {
                 // do nothing if there are no messages
             }
         };
+        match msg_recv.com_type {
+            GetMusic=> {
+                if let Some(v) = queue.get(0){
+                    let a = com.clone();
+                    data_send.send(ThreadCommunication{
+                        com_type: CommunicationType::Ok200,
+                        com_t_type: SendRecv::Send,
+                        com_message: "".to_string(),
+                        com_video: *v
+                    })
+                }
+            },
+            SetMusic => {
+
+            }
+        }
 
         // TODO: implement a check to see if message is for thread or not
 

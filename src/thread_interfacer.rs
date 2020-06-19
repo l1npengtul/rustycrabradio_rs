@@ -7,6 +7,7 @@ pub enum CommunicationType{
     AddMusic,
     SetMusic,
     ShutdownThread,
+    Ok200,
 }
 pub enum SendRecv{
     Send,
