@@ -5,7 +5,6 @@ use crate::config_loader::Video;
 pub enum CommunicationType{
     GetMusic,
     AddMusic,
-    SetMusic,
     ShutdownThread,
     Ok200,
 }
@@ -28,7 +27,7 @@ impl ThreadCommunication{
             com_type : t,
             com_t_type : t_type,
             com_message : msg,
-            com_video : Video,
+            com_video : vid,
         }
     }
 }

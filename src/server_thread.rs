@@ -5,13 +5,21 @@ use std::thread;
 use crossbeam::crossbeam_channel::{unbounded, Receiver, Sender};
 use crate::thread_interfacer::*;
 use crate::config_loader::*;
-use serenity::prelude::Context;
+use serenity::prelude::{Mutex,Context};
 use serenity::model::prelude::Message;
+use serenity::client::Cache;
+use serenity::framework::standard::CommandResult;
+use crate::VoiceManager;
+use crate::chk_log;
+use serenity::voice;
+use serenity::voice::{LockedAudio, Audio};
+use std::sync::Arc;
 
 
-pub async fn music_play_thread(ctx: Context, msg : Message, thread_name : String, data_recv : Receiver<ThreadCommunication>, data_send : Sender<ThreadCommunication>){
+pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : String, data_recv : Receiver<ThreadCommunication>, data_send : Sender<ThreadCommunication>){
     let mut thread_st_aaaaaaaaaaaaaay_alive: bool = true;
-    let mut queue : Vec<Video> = Vec::new();
+    let mut queue = Vec::new();
+    let mut audio_src : Audio;
     while thread_st_aaaaaaaaaaaaaay_alive {
         let msg_recv = match data_recv.recv() {
             Ok(com) => com,
@@ -20,9 +28,8 @@ pub async fn music_play_thread(ctx: Context, msg : Message, thread_name : String
             }
         };
         match msg_recv.com_type {
-            GetMusic=> {
+            CommunicationType::GetMusic=> {
                 if let Some(v) = queue.get(0){
-                    let a = com.clone();
                     data_send.send(ThreadCommunication{
                         com_type: CommunicationType::Ok200,
                         com_t_type: SendRecv::Send,
@@ -30,18 +37,127 @@ pub async fn music_play_thread(ctx: Context, msg : Message, thread_name : String
                         com_video: *v
                     })
                 }
-            },
-            SetMusic => {
+            }
+            CommunicationType::AddMusic => {
+                queue.push(msg_recv.com_video);
+                data_send.send(ThreadCommunication{
+                    com_type: CommunicationType::Ok200,
+                    com_t_type: SendRecv::Send,
+                    com_message: "Sucessfully Added Music!".to_string(),
+                    com_video: Video{
+                        title: "".to_string(),
+                        link: "".to_string(),
+                        author_name: "".to_string(),
+                        duration: "".to_string(),
+                        thumbnail: "".to_string()
+                    }
+                });
 
             }
+            CommunicationType::ShutdownThread => {
+                thread_st_aaaaaaaaaaaaaay_alive = false;
+                // add function to leave
+                data_send.send(ThreadCommunication{
+                    com_type: CommunicationType::Ok200,
+                    com_t_type: SendRecv::Send,
+                    com_message: "Shutting Down Thread...".to_string(),
+                    com_video: Video {
+                        title: "".to_string(),
+                        link: "".to_string(),
+                        author_name: "".to_string(),
+                        duration: "".to_string(),
+                        thumbnail: "".to_string()
+                    }
+                });
+                continue;
+            }
+            _ => {}
         }
+        if join_channel(ctx,msg).await == false{
+            eprintln!("Could not join voice channel");
+        }
+        else {
+            println!("Sucessfully joined voicechannel");
 
-        // TODO: implement a check to see if message is for thread or not
+            if audio_src.playing == true{
+                continue;
+            }
+            else{
+                let guild_id = match ctx.read().guild_channel(msg.channel_id) {
+                    Some(channel) => channel.read().guild_id,
+                    None => {
+                        chk_log(msg.channel_id.say(&ctx.http,"Error finding channel info"));
+                    },
+                };
 
-        queue.push(msg_recv);
+                let mut manager_lock = ctx.data.lock().get::<VoiceManager>().cloned().unwrap();
+                let mut manager = manager_lock.lock();
 
+                if let Some(handler) = manager.get_mut(guild_id) {
+                    let source = match voice::ytdl(queue.get(0).unwrap().link.as_str()) {
+                        Ok(source) => source,
+                        Err(why) => {
+                            println!("Err starting source: {:?}", why);
 
+                            chk_log(msg.channel_id.say(&ctx.http,"Error sourcing ffmpeg"));
+                        },
+                        _ => {
+                            eprintln!("Failed to match");
+                        }
+                    };
+                    let a_lck = handler.play_only(source).clone();
+                    audio_src = a_lck.lock();
 
-
+                    chk_log(msg.channel_id.say(&ctx.http,"Playing song"));
+                } else {
+                    chk_log(msg.channel_id.say(&ctx.http,"Not in a voice channel to play in"));
+                }
+            }
+        }
     }
+}
+
+
+
+
+
+async fn join_channel(ctx : &Context, msg : &Message) -> bool{
+    let guild = match msg.guild_id() {
+        Some(guild) => guild,
+        None => {
+            chk_log(msg.channel_id.say(&ctx.http,"Groups and DMs not supported"));
+
+            return false;
+        }
+    };
+
+    let channel_id = guild
+        .read()
+        .voice_states.get(&msg.author.id)
+        .and_then(|voice_state| voice_state.channel_id);
+
+
+    let connect_to = match channel_id {
+        Some(channel) => channel,
+        None => {
+            chk_log(msg.reply(&ctx.http,"Not in a voice channel"));
+
+            return false;
+        }
+    };
+
+    let mut manager_lock = ctx.data.lock().get::<VoiceManager>().cloned().unwrap();
+    let mut manager = manager_lock.lock();
+
+    if manager.join(guild_id, connect_to).is_some() {
+        chk_log(msg.channel_id.say(&ctx.http,&format!("Joined {}", connect_to.mention())));
+        return true;
+    } else {
+        chk_log(msg.channel_id.say(&ctx.http,"Error joining the channel"));
+        return false;
+    }
+}
+
+async fn leave_channel(ctx : &Context, msg : &Message) -> CommandResult{
+    Ok(())
 }
