@@ -136,6 +136,8 @@ async fn join_channel(ctx : &Context, msg : &Message) -> bool{
         .voice_states.get(&msg.author.id)
         .and_then(|voice_state| voice_state.channel_id);
 
+    let guild_id = guild.read().id;
+
 
     let connect_to = match channel_id {
         Some(channel) => channel,
@@ -145,6 +147,7 @@ async fn join_channel(ctx : &Context, msg : &Message) -> bool{
             return false;
         }
     };
+
 
     let mut manager_lock = ctx.data.lock().get::<VoiceManager>().cloned().unwrap();
     let mut manager = manager_lock.lock();

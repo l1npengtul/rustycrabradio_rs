@@ -74,10 +74,11 @@ impl Video{
     pub async fn new(link : &str) -> Result<Self, dyn Error>{
         let video_ytdl = match YoutubeDl::new(link).run(){
             Ok(v) => {
-                match v {
+                let rv = match v {
                     SingleVideo(sv) => sv,
-                    Playlist(pl) => return Err(Error),
-                }
+                    Playlist(pl) => return Err(pl),
+                };
+                rv
             },
             Err(why)=>Err(why),
         };
@@ -147,7 +148,7 @@ detailed_debug=true
 
 [globals]
 # banned search terms
-# lists go like ["term1","term2"]ㅋ
+# lists go like ["term1","term2"]
 banned_search=[]
 # note: use links
 # this is good: ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=F5oQoNMpqi8"]
