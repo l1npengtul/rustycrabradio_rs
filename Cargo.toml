@@ -12,6 +12,9 @@ typemap = "0.3"
 dashmap = "3.11.4"
 toml = "0.5"
 serde = "1.0"
+youtube_dl = "0.5"
+anyhow = "1.0.31"
+serde_json = "1.0.55"
 
 [dependencies.serenity-lavalink]
 git = "https://gitlab.com/nitsuga5124/serenity-lavalink/"

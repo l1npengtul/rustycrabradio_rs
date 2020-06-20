@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate serenity;
 extern crate typemap;
+extern crate anyhow;
 
 use std::{collections::{HashMap, HashSet}, sync::Arc};
 use serenity::{
@@ -74,6 +75,7 @@ impl EventHandler for Handler {
     }
 }
 
+// TODO: RESTRUCTURE CODE INTO NEAT FOLDERS
 
 // Command Groups
 #[group]

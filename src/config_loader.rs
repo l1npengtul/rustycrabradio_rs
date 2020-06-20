@@ -1,6 +1,8 @@
 // Gets config from a file in the same working directory as the program called
 // bot.cfg, and allows async read only access to the file
 // returns a BotConfig type variable
+
+
 use std::io::prelude::*;
 use toml;
 use serde::{Deserialize, Serialize};
@@ -16,6 +18,50 @@ use tokio::{
     }
 };
 use std::path::Path;
+use youtube_dl::YoutubeDl;
+use youtube_dl::YoutubeDlOutput::{Playlist,SingleVideo};
+use serenity::client::bridge::gateway::ShardManagerMessage::ShardInvalidAuthentication;
+use serde_json::Value;
+
+//mod error;
+/*
+pub struct Link{
+    address : String,
+}
+impl Link{
+
+}
+*/
+pub struct Video {
+    title : String,
+    link : String,
+    id : String,
+    length : Value,
+    thumbnail : String,
+}
+impl Video{
+    pub async fn new(link : &str)->Result<Self>{
+        let video_ytdl = match YoutubeDl::new(link).run(){
+            Ok(v) => v,
+            Err(why) => return Err(why),
+        };
+        let sv = match video_ytdl {
+            SingleVideo(sv) => sv,
+            Playlist(pl) => {
+                return Err(anyhow!("Link {} is a playlist and are not supported!", link));
+            }
+        };
+        //let rv = *sv;
+        Ok(Video{
+            title: sv.title.unwrap(),
+            link: link.to_string(),
+            id: sv.id.unwrap(),
+            length: sv.duration.unwrap(),
+            thumbnail: sv.thumbnail.unwrap(),
+        })
+
+    }
+}
 
 pub struct BotConfig{
     pub(crate) discord_api : String,
