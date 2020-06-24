@@ -30,5 +30,6 @@ pub enum VideoError {
     BannedVideoError{
         link : String,
     },
+
 }
 
