@@ -14,6 +14,7 @@ use crate::chk_log;
 use serenity::voice;
 use serenity::voice::{LockedAudio, Audio};
 use std::sync::Arc;
+use std::ops::Deref;
 
 
 pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : String, data_recv : Receiver<ThreadCommunication>, data_send : Sender<ThreadCommunication>){
@@ -27,6 +28,9 @@ pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : Stri
                 // do nothing if there are no messages
             }
         };
+
+
+
         match msg_recv.com_type {
             CommunicationType::GetMusic=> {
                 if let Some(v) = queue.get(0){
@@ -34,7 +38,7 @@ pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : Stri
                         com_type: CommunicationType::Ok200,
                         com_t_type: SendRecv::Send,
                         com_message: "".to_string(),
-                        com_video: *v
+                        com_video:
                     })
                 }
             }
@@ -47,9 +51,10 @@ pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : Stri
                     com_video: Video{
                         title: "".to_string(),
                         link: "".to_string(),
-                        author_name: "".to_string(),
-                        duration: "".to_string(),
-                        thumbnail: "".to_string()
+                        author: "".to_string(),
+                        id: "".to_string(),
+                        thumbnail: "".to_string(),
+                        length: Default::default()
                     }
                 });
 
@@ -64,9 +69,10 @@ pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : Stri
                     com_video: Video {
                         title: "".to_string(),
                         link: "".to_string(),
-                        author_name: "".to_string(),
-                        duration: "".to_string(),
-                        thumbnail: "".to_string()
+                        author: "".to_string(),
+                        id: "".to_string(),
+                        thumbnail: "".to_string(),
+                        length: Default::default()
                     }
                 });
                 continue;

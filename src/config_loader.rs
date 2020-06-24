@@ -21,6 +21,8 @@ use std::collections::HashMap;
 use youtube_dl;
 use youtube_dl::YoutubeDl;
 use youtube_dl::YoutubeDlOutput::{SingleVideo, Playlist};
+use serde_json::value::Value;
+use crate::error;
 
 
 pub struct BotConfig{
@@ -60,38 +62,61 @@ impl BotConfig {
         }
         &false
     }
-
 }
 
 pub struct Video {
     pub(crate) title : String,
     pub(crate) link : String,
-    pub(crate) author_name : String,
-    pub(crate) duration : String,
+    pub(crate) author : String,
+    pub(crate) id : String,
+    pub(crate) length : Value,
     pub(crate) thumbnail : String,
 }
 impl Video{
-    pub async fn new(link : &str) -> Result<Self, dyn Error>{
+    pub async fn new(link : &str,  bcfg : &BotConfig)->Result<Self,error::VideoError>{
         let video_ytdl = match YoutubeDl::new(link).run(){
-            Ok(v) => {
-                let rv = match v {
-                    SingleVideo(sv) => sv,
-                    Playlist(pl) => return Err(pl),
-                };
-                rv
-            },
-            Err(why)=>Err(why),
+            Ok(v) => v,
+            Err(why) => return Err(error::VideoError::GetVideoError {link: link.to_string()})
+        };
+        let sv = match video_ytdl {
+            SingleVideo(sv) => sv,
+            Playlist(pl) => {
+                return Err(error::VideoError::PlaylistError {link:link.to_string()});
+            }
+        };
+
+        let vid_duration = match sv.duration {
+            Some(dur) => dur,
+            None => {return Err(error::VideoError::VideoUnpackError {
+                link : link.to_string(),
+                value : String::from("Duration")
+            })}
+        };
+
+        let vid_thumbnail = match sv.thumbnail {
+            Some(v) => v,
+            None => {return Err(error::VideoError::VideoUnpackError {
+                link : link.to_string(),
+                value : String::from("Thumbnail")
+            })}
+        };
+
+        let vid_uploader = match sv.uploader {
+            Some(up) => up,
+            None => {return Err(error::VideoError::VideoUnpackError {
+                link : link.to_string(),
+                value : String::from("Uploader")
+            })}
         };
         Ok(Video{
-            title: video_ytdl.title,
+            title: sv.title,
             link: link.to_string(),
-            author_name: video_ytdl.uploader?,
-            duration: video_ytdl.end_time?,
-            thumbnail: video_ytdl.thumbnail?,
+            author: vid_uploader,
+            id: sv.id,
+            length: vid_duration,
+            thumbnail: vid_thumbnail,
         })
     }
-
-
 }
 
 
