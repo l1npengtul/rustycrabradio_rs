@@ -29,8 +29,6 @@ pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : Stri
             }
         };
 
-
-
         match msg_recv.com_type {
             CommunicationType::GetMusic=> {
                 if let Some(v) = queue.get(0){

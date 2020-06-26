@@ -23,6 +23,7 @@ use youtube_dl::YoutubeDl;
 use youtube_dl::YoutubeDlOutput::{SingleVideo, Playlist};
 use serde_json::value::Value;
 use crate::error;
+use std::time::Duration;
 
 
 pub struct BotConfig{
@@ -116,6 +117,18 @@ impl Video{
             length: vid_duration,
             thumbnail: vid_thumbnail,
         })
+    }
+
+    pub async fn get_duration_seconds(&self) -> Result<Duration,error::VideoError>{
+        let len = self.length.clone();
+        let time_string =  match len.as_str(){
+            Some(str_v) => str_v.to_string(),
+            None => error::VideoError::VideoUnpackError {
+                link : (&self.link).parse().unwrap(),
+                value : "get_duration_seconds".to_string(),
+            }
+        };
+
     }
 }
 
