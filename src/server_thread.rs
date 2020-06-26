@@ -16,7 +16,7 @@ use serenity::voice::{LockedAudio, Audio};
 use std::sync::Arc;
 use std::ops::Deref;
 
-
+/*
 pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : String, data_recv : Receiver<ThreadCommunication>, data_send : Sender<ThreadCommunication>){
     let mut thread_st_aaaaaaaaaaaaaay_alive: bool = true;
     let mut queue = Vec::new();
@@ -121,13 +121,21 @@ pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : Stri
             }
         }
     }
+}*/
+
+
+pub(crate) fn start_music(ctx : &Context, msg : &Message, recv :  &Receiver<ThreadCommunication>){
+
+}
+
+fn play_music_thread(ctx : &Context){
+    'staaaayalive : loop {
+        
+    }
 }
 
 
-
-
-
-async fn join_channel(ctx : &Context, msg : &Message) -> bool{
+fn join_channel(ctx : &Context, msg : &Message) -> bool{
     let guild = match msg.guild_id() {
         Some(guild) => guild,
         None => {
@@ -167,6 +175,6 @@ async fn join_channel(ctx : &Context, msg : &Message) -> bool{
     }
 }
 
-async fn leave_channel(ctx : &Context, msg : &Message) -> CommandResult{
+fn leave_channel(ctx : &Context, msg : &Message) -> CommandResult{
     Ok(())
 }
