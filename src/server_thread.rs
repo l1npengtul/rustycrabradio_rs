@@ -1,7 +1,7 @@
 // The Main Server Thread per Server. This manages the playing, loading, etc of songs with a MPSC
 // architecture from the main -> server thread.
 
-use std::thread;
+use std::{thread,time}
 use crossbeam::crossbeam_channel::{unbounded, Receiver, Sender};
 use crate::thread_interfacer::*;
 use crate::config_loader::*;
@@ -15,6 +15,7 @@ use serenity::voice;
 use serenity::voice::{LockedAudio, Audio};
 use std::sync::Arc;
 use std::ops::Deref;
+use std::time::Duration;
 
 /*
 pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : String, data_recv : Receiver<ThreadCommunication>, data_send : Sender<ThreadCommunication>){
@@ -126,14 +127,61 @@ pub(crate) fn start_music(ctx : &Context, msg : &Message, recv :  &Receiver<Thre
 
 }
 
-fn play_music_thread(ctx : &Context){
-    'staaaayalive : loop {
-        
+async fn play_music_thread(ctx : &Context, msg : &Message, recv : &Receiver<ThreadCommunication>){
+    thread::sleep(time::Duration::from_millis(100));
+    let join_sucess = join_channel(ctx,msg).await;
+    let mut music_queue : Vec<Video>;
+    let mut music_set : bool;
+    let mut music_drought : i64 = 0;
+    let mut music_timer : Duration;
+    if join_sucess{
+
+        'main_loop : loop {
+            let cur_video = match read_recv(recv).await{
+                Some(v) => v,
+                None => (),
+            };
+            music_queue.push(cur_video);
+
+            if music_queue.len() > 0 {
+
+            }
+
+            //Play_Only if items in queue
+                // no items in queue = quit
+            //set timer
+            'timer_loop : loop {
+                // read_recv()
+
+                // see if timer expired
+                    // true => break 'timer_loop
+                    // else => continue
+            }
+        }
+    }
+    else {
+        eprintln!("Error joining voicechannel");
     }
 }
 
+async fn read_recv(recv : &Receiver<ThreadCommunication>) -> Option<Video>{
+    let com = match recv.recv() {
+        Ok(i_love_emilia) => i_love_emilia,
+        Err(why) => {return None}
+    };
+    match com.com_type {
+        CommunicationType::AddMusic => {
+            return Some(com.com_video)
+        }
+        _ => {return None}
+    }
+}
 
-fn join_channel(ctx : &Context, msg : &Message) -> bool{
+async fn get_source(ctx : &Context, msg : &Message) -> Result<>{
+
+}
+
+async fn join_channel(ctx : &Context, msg : &Message) -> bool{
     let guild = match msg.guild_id() {
         Some(guild) => guild,
         None => {
