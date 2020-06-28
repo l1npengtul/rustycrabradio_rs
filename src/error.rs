@@ -30,6 +30,18 @@ pub enum VideoError {
     BannedVideoError{
         link : String,
     },
-
+    #[snafu(display("Could not get video source at link {}, serenity returned: {}", link, reason))]
+    VideoSourceError{
+        link : String,
+        reason : String,
+    },
 }
 
+
+#[derive(Debug, Snafu)]
+pub enum HandlerError {
+    #[snafu(display("Could not handler, serenity returned: {}", why))]
+    HandlerGetError{
+        why : String,
+    }
+}

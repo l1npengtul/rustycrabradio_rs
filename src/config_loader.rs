@@ -49,10 +49,9 @@ impl BotConfig {
         if self.banned_words_global.contains(&word.to_string()){
             return &true;
         }
-        else{
+        else {
             return &false;
         }
-        &false
     }
     pub async fn contains_link(&self, link : &str) -> &bool{
         if self.banned_links_global.contains(&link.to_string()){
@@ -61,7 +60,6 @@ impl BotConfig {
         else{
             return &false;
         }
-        &false
     }
 }
 
@@ -121,13 +119,14 @@ impl Video{
 
     pub async fn get_duration_seconds(&self) -> Result<Duration,error::VideoError>{
         let len = self.length.clone();
-        let time_string =  match len.as_str(){
-            Some(str_v) => str_v.to_string(),
-            None => error::VideoError::VideoUnpackError {
+        let time_string =  match len.as_i64(){
+            Some(str_v) => str_v,
+            None =>  {return Err(error::VideoError::VideoUnpackError {
                 link : (&self.link).parse().unwrap(),
                 value : "get_duration_seconds".to_string(),
-            }
+            })}
         };
+        Ok(Duration::from_secs(time_string as u64))
 
     }
 }
