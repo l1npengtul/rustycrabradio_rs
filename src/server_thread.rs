@@ -5,7 +5,7 @@ use std::{thread,time};
 use crossbeam::crossbeam_channel::{unbounded, Receiver, Sender};
 use crate::thread_interfacer::*;
 use crate::config_loader::*;
-use serenity::prelude::{Mutex,Context};
+use serenity::prelude::{Mutex, Context, Mentionable};
 use serenity::model::prelude::Message;
 use serenity::client::Cache;
 use serenity::framework::standard::CommandResult;
@@ -213,7 +213,7 @@ async fn get_handler(ctx: &Context, msg : &Message) -> Result<Handler,error::Han
         None => {return Err(HandlerGetError { why: "Guild ID returned None ".to_string() });}
     };
 
-    let mut mgmt_lck = match ctx.data.lock().get::<VoiceManager>().cloned(){
+    let mut mgmt_lck = match ctx.data.read().await.get::<VoiceManager>().cloned(){
         Ok(a) => a,
         Err(b) => {return Err(HandlerGetError {why : b.to_string()})}
     };
@@ -265,13 +265,14 @@ async fn join_channel(ctx : &Context, msg : &Message) -> bool{
     };
 
 
-    let mut manager_lock = ctx.data.lock().get::<VoiceManager>().cloned().unwrap();
-    let mut manager = manager_lock.lock();
+    let mut manager_lock = ctx.data.read().await
+    let mut manager = manager_lock.read();
 
     if manager.join(guild_id, connect_to).is_some() {
         chk_log(msg.channel_id.say(&ctx.http,&format!("Joined {}", connect_to.mention())).await);
         return true;
-    } else {
+    }
+    else {
         chk_log(msg.channel_id.say(&ctx.http,"Error joining the channel").await);
         return false;
     }
