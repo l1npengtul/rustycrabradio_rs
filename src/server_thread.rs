@@ -5,7 +5,7 @@ use std::{thread,time};
 use crossbeam::crossbeam_channel::{unbounded, Receiver, Sender};
 use crate::thread_interfacer::*;
 use crate::config_loader::*;
-use serenity::prelude::{Mutex, Context, Mentionable};
+use serenity::prelude::{Mutex, Context, Mentionable, RwLock};
 use serenity::model::prelude::Message;
 use serenity::client::Cache;
 use serenity::framework::standard::CommandResult;
@@ -18,6 +18,7 @@ use std::ops::Deref;
 use std::time::{Duration, Instant};
 use crate::error::HandlerError::HandlerGetError;
 use crate::error::VideoError;
+use crate::join_channel;
 
 /*
 pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : String, data_recv : Receiver<ThreadCommunication>, data_send : Sender<ThreadCommunication>){
@@ -207,21 +208,22 @@ async fn read_recv(recv : &Receiver<ThreadCommunication>) -> Option<Video> {
     }
 }
 
-async fn get_handler(ctx: &Context, msg : &Message) -> Result<Handler,error::HandlerError>{
+async fn get_handler(ctx: &Context, msg : &Message) -> Result<&mut Handler,error::HandlerError>{
     let guild_id = match msg.guild_id {
         Some(emiguildid) => emiguildid,
         None => {return Err(HandlerGetError { why: "Guild ID returned None ".to_string() });}
     };
 
     let mut mgmt_lck = match ctx.data.read().await.get::<VoiceManager>().cloned(){
-        Ok(a) => a,
-        Err(b) => {return Err(HandlerGetError {why : b.to_string()})}
+        Some(a) => a,
+        None => {return Err(HandlerGetError {why : String::from("Reading handler returned null")})}
     };
-    let mut manager = mgmt_lck.lock();
+    let mut manager = mgmt_lck.lock().await;
 
 
     if let Some(handler) = manager.get_mut(guild_id){
-        return Ok(handler);
+        let a = handler;
+        return Ok(a);
     }
     Err(HandlerGetError {why : "Failed to lock handler.".to_string()})
 }
@@ -240,43 +242,6 @@ async fn get_source_ytdl(link : &str) -> Result<Box<dyn AudioSource>, error::Vid
 }
 
 
-async fn join_channel(ctx : &Context, msg : &Message) -> bool{
-    let guild = match msg.guild(ctx.cache.as_ref()).await {
-        Some(guild) => guild,
-        None => {
-            chk_log(msg.channel_id.say(&ctx.http,"Groups and DMs not supported").await);
-            return false;
-        }
-    };
-
-    let guild_id = guild.id;
-    let channel_id = guild
-        .voice_states.get(&msg.author.id)
-        .and_then(|voice_state| voice_state.channel_id);
-
-
-    let connect_to = match channel_id {
-        Some(channel) => channel,
-        None => {
-            chk_log(msg.reply(&ctx.http,"Not in a voice channel").await);
-
-            return false;
-        }
-    };
-
-
-    let mut manager_lock = ctx.data.read().await
-    let mut manager = manager_lock.read();
-
-    if manager.join(guild_id, connect_to).is_some() {
-        chk_log(msg.channel_id.say(&ctx.http,&format!("Joined {}", connect_to.mention())).await);
-        return true;
-    }
-    else {
-        chk_log(msg.channel_id.say(&ctx.http,"Error joining the channel").await);
-        return false;
-    }
-}
 
 fn leave_channel(ctx : &Context, msg : &Message) -> CommandResult{
     Ok(())

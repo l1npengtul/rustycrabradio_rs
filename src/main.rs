@@ -35,7 +35,6 @@ use serenity_lavalink::{
 };
 use std::sync::mpsc::channel;
 use serenity::model::prelude::GuildId;
-use tokio;
 use crate::config_loader::generate_bot_toml;
 use std::time::Duration;
 use typemap::Key;
@@ -53,9 +52,8 @@ struct SearchBoxMessage{
 
 }
 struct VoiceManager;
-
-impl Key for VoiceManager {
-    type Value = Arc<serenity::prelude::Mutex<ClientVoiceManager>>;
+impl TypeMapKey for VoiceManager {
+    type Value = Arc<Mutex<ClientVoiceManager>>;
 }
 struct ShardManagerContainer;
 impl TypeMapKey for ShardManagerContainer{
@@ -376,3 +374,40 @@ fn chk_log(result: SerenityResult<Message>) {
     }
 }
 
+pub async fn join_channel(ctx : &Context, msg : &Message) -> bool{
+    let guild = match msg.guild(ctx.cache.as_ref()).await {
+        Some(guild) => guild,
+        None => {
+            chk_log(msg.channel_id.say(&ctx.http,"Groups and DMs not supported").await);
+            return false;
+        }
+    };
+
+    let guild_id = guild.id;
+    let channel_id = guild
+        .voice_states.get(&msg.author.id)
+        .and_then(|voice_state| voice_state.channel_id);
+
+
+    let connect_to = match channel_id {
+        Some(channel) => channel,
+        None => {
+            chk_log(msg.reply(&ctx.http,"Not in a voice channel").await);
+
+            return false;
+        }
+    };
+
+
+    let mut manager_lock = ctx.data.read().await.get::<VoiceManager>().cloned().expect("Expected VoiceManager in ShareMap.");;
+    let mut manager = manager_lock.lock().await;
+
+    if manager.join(guild_id, connect_to).is_some() {
+        chk_log(msg.channel_id.say(&ctx.http,&format!("Joined {}", connect_to.mention())).await);
+        return true;
+    }
+    else {
+        chk_log(msg.channel_id.say(&ctx.http,"Error joining the channel").await);
+        return false;
+    }
+}
