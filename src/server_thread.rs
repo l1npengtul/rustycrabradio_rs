@@ -12,7 +12,7 @@ use serenity::framework::standard::CommandResult;
 use crate::{VoiceManager, error};
 use crate::chk_log;
 use serenity::voice;
-use serenity::voice::{LockedAudio, Audio, AudioSource, Handler};
+use serenity::voice::{LockedAudio, Audio, AudioSource, Handler, Manager};
 use std::sync::Arc;
 use std::ops::Deref;
 use std::time::{Duration, Instant};
@@ -208,23 +208,28 @@ async fn read_recv(recv : &Receiver<ThreadCommunication>) -> Option<Video> {
     }
 }
 
-async fn get_handler(ctx: &Context, msg : &Message) -> Result<&mut Handler,error::HandlerError>{
+// A Strict containing a mutable struct because im too lazy to do &'a bs
+pub struct HandlerContainer {
+    pub(crate) handler : Handler,
+}
+
+async fn get_handler(ctx: &Context, msg : &Message) -> Result<Box<&mut Handler>,error::HandlerError>{
     let guild_id = match msg.guild_id {
         Some(emiguildid) => emiguildid,
         None => {return Err(HandlerGetError { why: "Guild ID returned None ".to_string() });}
     };
 
-    let mut mgmt_lck = match ctx.data.read().await.get::<VoiceManager>().cloned(){
+    let mut a = match ctx.data.read().await.get::<VoiceManager>().cloned(){
         Some(a) => a,
         None => {return Err(HandlerGetError {why : String::from("Reading handler returned null")})}
     };
-    let mut manager = mgmt_lck.lock().await;
+    let mut manager = a.lock().await;
 
 
     if let Some(handler) = manager.get_mut(guild_id){
-        let a = handler;
-        return Ok(a);
+        return Ok(handler);
     }
+
     Err(HandlerGetError {why : "Failed to lock handler.".to_string()})
 }
 
