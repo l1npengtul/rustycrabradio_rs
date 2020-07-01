@@ -127,13 +127,34 @@ pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : Stri
 
 
 pub(crate) fn start_music(ctx : &Context, msg : &Message, recv :  &Receiver<ThreadCommunication>){
-
+    let _handler = thread::new(|| {
+        play_music_thread(ctx,msg,recv);
+    });
 }
 
 async fn play_music_thread(ctx : &Context, msg : &Message, recv : &Receiver<ThreadCommunication>){
     thread::sleep(time::Duration::from_millis(100));
     let join_sucess = join_channel(ctx,msg).await;
-    let mut music_queue : Vec<Video> = vec![];
+    //test
+
+    let mut music_queue : Vec<Video> = vec![
+        Video{
+            title: "aaaa".to_string(),
+            link: "https://www.youtube.com/watch?v=dQw4w9WgXcQ".to_string(),
+            author: "qweqweqweqw".to_string(),
+            id: "ggggggggg".to_string(),
+            length: Default::default(),
+            thumbnail: "awfafwsafwa".to_string()
+        },
+        Video{
+            title: "eeeeeeeeee".to_string(),
+            link: "https://www.youtube.com/watch?v=Tsxp6MLULfY".to_string(),
+            author: "asdasd".to_string(),
+            id: "ggeeerfereawdwadaw".to_string(),
+            length: Default::default(),
+            thumbnail: "FWArfafwafwawafwafwsa".to_string()
+        }
+    ];
     let mut music_set : bool;
     let mut music_drought : i64 = 0;
     let mut music_timer : Duration = Duration::from_secs(0);
@@ -213,7 +234,7 @@ pub struct HandlerContainer {
     pub(crate) handler : Handler,
 }
 
-async fn get_handler(ctx: &Context, msg : &Message) -> Result<Box<&mut Handler>,error::HandlerError>{
+async fn get_handler(ctx: &Context, msg: &Message) -> Result<Handler, error::HandlerError>{
     let guild_id = match msg.guild_id {
         Some(emiguildid) => emiguildid,
         None => {return Err(HandlerGetError { why: "Guild ID returned None ".to_string() });}
@@ -227,11 +248,13 @@ async fn get_handler(ctx: &Context, msg : &Message) -> Result<Box<&mut Handler>,
 
 
     if let Some(handler) = manager.get_mut(guild_id){
-        return Ok(handler);
+        return Ok(handler.clone());
     }
 
     Err(HandlerGetError {why : "Failed to lock handler.".to_string()})
 }
+
+
 
 async fn get_source_ytdl(link : &str) -> Result<Box<dyn AudioSource>, error::VideoError>{
     let source = match voice::ytdl(link).await{

@@ -6,7 +6,7 @@ extern crate serenity;
 extern crate typemap;
 extern crate crossbeam;
 
-use std::{collections::{HashMap, HashSet}, sync::Arc};
+use std::{collections::{HashMap, HashSet}, sync::Arc, thread};
 use serenity::{
     async_trait,
     client::{
@@ -38,6 +38,7 @@ use serenity::model::prelude::GuildId;
 use crate::config_loader::generate_bot_toml;
 use std::time::Duration;
 use typemap::Key;
+use crate::thread_interfacer::ThreadCommunication;
 
 
 mod config_loader;
@@ -157,7 +158,6 @@ async fn main()-> Result<(), Box<dyn std::error::Error>> {
                 detailed_debug : false,
                 banned_links_global : vec![String::from("a"),String::from("b")],
                 banned_words_global : vec![String::from("a"),String::from("b")],
-                youtube_api: "".to_string()
             };
             return_cfg
         }
@@ -237,12 +237,26 @@ basic command template, ur welcome future lewis
 #[command]
 //servers (guilds) only
 #[only_in(guilds)]
-async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
-    Ok(())
+async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let url = match args.single::<String>() {
+        Ok(url) => url,
+        Err(_) => {
+            chk_log(msg.channel_id.say(&ctx.http, "Must provide a URL to a video or audio").await);
+            return Ok(());
+        },
+    };
+
+    if !url.starts_with("http") {
+        chk_log(msg.channel_id.say(&ctx.http, "Must provide a valid URL").await);
+        return Ok(());
+    }
+
+    let (s,r) = crossbeam::crossbeam_channel::unbounded();
+    server_thread::start_music(ctx,msg,)
+
+
+
 }
-
-
-
 /*
 
     let why_are_they_called_guilds_and_not_servers = match ctx.cache.guild_channel(msg.channel_id).await {

@@ -33,7 +33,6 @@ pub struct BotConfig{
     pub(crate) detailed_debug : bool,
     pub(crate) banned_words_global : Vec<String>,
     pub(crate) banned_links_global : Vec<String>,
-    pub(crate) youtube_api : String,
 }
 impl BotConfig {
     pub fn get_discord_api(&self) -> &String{
@@ -151,22 +150,18 @@ struct Globals{
     banned_links : Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct Youtube{
-    youtube_api : String,
-}
-
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Config{
     discord : Discord,
     preferences : Preferences,
     globals : Globals,
-    youtube : Youtube,
 }
 
-// File write example
-/*
+
+pub async fn generate_config_file(file_name: &str) ->std::io::Result<()>{
+    let mut generated_file = File::create(file_name).await?;
+    generated_file.write_all(r#"
 title="bot config file"
 
 # hashtags indicate line comments
@@ -175,6 +170,7 @@ title="bot config file"
 # replace <API_KEY> with the api key you got from discord, and enclose them in ""
 [discord]
 discord_api=<API_KEY>
+discord_prefix=""
 
 [preferences]
 # true  => Network Congestion, Download/Upload Speed, Packet Loss, Ping
@@ -191,40 +187,6 @@ banned_search=[]
 # this is good: ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=F5oQoNMpqi8"]
 # this is no good: ["F5oQoNMpqi8", "dQw4w9WgXcQ", "hentai"]
 banned_links=[]
- */
-
-pub async fn generate_config_file(file_name: &str) ->std::io::Result<()>{
-    let mut generated_file = File::create(file_name).await?;
-    generated_file.write_all(r#"
-title="bot config file"
-
-# hashtags indicate line comments
-# go to https://discord.com/developers/applications and make a bot
-# don't share this key with anyone but yourself
-# replace <API_KEY> with the api key you got from discord, and enclose them in ""
-[discord]
-discord_api=<API_KEY>
-prefix=""
-
-[preferences]
-# true  => Network Congestion, Download/Upload Speed, Packet Loss, Ping
-# false => ping
-detailed_network=true
-# true  => Program RAM usage, CPU usage, Threads
-detailed_debug=true
-
-[globals]
-# banned search terms
-# lists go like ["term1","term2"]ㅋ
-banned_search=[]
-# note: use links
-# this is good: ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=F5oQoNMpqi8"]
-# this is no good: ["F5oQoNMpqi8", "dQw4w9WgXcQ", "hentai"]
-banned_links=[]
-
-[youtube]
-# Youtube API Key
-youtube_api=""
 "#.as_ref()).await?;
     Ok(())
 }
@@ -245,7 +207,6 @@ pub async fn get_config() -> Result<BotConfig, std::io::Error>{
         detailed_debug : read_cfg.preferences.detailed_debug,
         banned_links_global : read_cfg.globals.banned_links,
         banned_words_global : read_cfg.globals.banned_search,
-        youtube_api : read_cfg.youtube.youtube_api,
     };
     Ok(return_cfg)
 }
