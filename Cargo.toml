@@ -33,4 +33,4 @@ features = ["cache", "framework", "standard_framework", "voice", "http", "rustls
 
 [dependencies.tokio]
 version = "0.2"
-features = ["macros","fs","io-util"]
+features = ["macros","fs","io-util","rt-core"]

@@ -19,6 +19,7 @@ use std::time::{Duration, Instant};
 use crate::error::HandlerError::HandlerGetError;
 use crate::error::VideoError;
 use crate::join_channel;
+use tokio::task;
 
 /*
 pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : String, data_recv : Receiver<ThreadCommunication>, data_send : Sender<ThreadCommunication>){
@@ -126,17 +127,18 @@ pub async fn music_play_thread(ctx: &Context, msg : &Message, thread_name : Stri
 }*/
 
 
-pub(crate) fn start_music(ctx : &Context, msg : &Message, recv :  &Receiver<ThreadCommunication>){
-    let _handler = thread::new(|| {
-        play_music_thread(ctx,msg,recv);
-    });
+pub(crate) async fn start_music(ctx : Context, msg : Message, recv :  Receiver<ThreadCommunication>) {
+    println!("c");
+    let handler = task::spawn(play_music_thread(ctx, msg, recv));
+    handler.await;
 }
 
-async fn play_music_thread(ctx : &Context, msg : &Message, recv : &Receiver<ThreadCommunication>){
+async fn play_music_thread(ctx : Context, msg : Message, recv : Receiver<ThreadCommunication>){
+    println!("b");
     thread::sleep(time::Duration::from_millis(100));
-    let join_sucess = join_channel(ctx,msg).await;
-    //test
+    let join_sucess = join_channel(&ctx,&msg).await;
 
+    //test
     let mut music_queue : Vec<Video> = vec![
         Video{
             title: "aaaa".to_string(),
@@ -159,7 +161,7 @@ async fn play_music_thread(ctx : &Context, msg : &Message, recv : &Receiver<Thre
     let mut music_drought : i64 = 0;
     let mut music_timer : Duration = Duration::from_secs(0);
     let mut instant : Instant = Instant::now();
-    let mut handler = match get_handler(ctx,msg).await {
+    let mut handler = match get_handler(&ctx,&msg).await {
         Ok(handle) => handle,
         Err(why) => {
             eprintln!("Error getting handler: {:?}",why);
@@ -169,7 +171,7 @@ async fn play_music_thread(ctx : &Context, msg : &Message, recv : &Receiver<Thre
     if join_sucess{
 
         'main_loop : loop {
-            if let Some(v) = read_recv(recv).await{
+            if let Some(v) = read_recv(&recv).await{
                 music_queue.push(v);
             }
             if music_queue.len() > 0 {
@@ -199,7 +201,7 @@ async fn play_music_thread(ctx : &Context, msg : &Message, recv : &Receiver<Thre
             }
             'timer_loop : loop {
                 let mut recv_video : Video;
-                if let Some(v) = read_recv(recv).await{
+                if let Some(v) = read_recv(&recv).await{
                     recv_video = v;
                     music_queue.push(recv_video);
                 }

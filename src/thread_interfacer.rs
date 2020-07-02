@@ -19,6 +19,7 @@ pub struct ThreadCommunication {
     pub(crate) com_type : CommunicationType,
     pub(crate) com_t_type : SendRecv,
     pub(crate) com_message : String,
+    // Note: change to Some(video)
     pub(crate) com_video : Video,
 }
 impl ThreadCommunication{
@@ -31,4 +32,5 @@ impl ThreadCommunication{
         }
     }
 }
+
 

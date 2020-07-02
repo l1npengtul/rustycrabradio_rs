@@ -5,6 +5,7 @@ mod error;
 extern crate serenity;
 extern crate typemap;
 extern crate crossbeam;
+extern crate threadpool;
 
 use std::{collections::{HashMap, HashSet}, sync::Arc, thread};
 use serenity::{
@@ -26,6 +27,7 @@ use serenity::{
     },
     utils::{content_safe, ContentSafeOptions},
     Result as SerenityResult,
+    voice,
 };
 use serenity::prelude::*;
 
@@ -38,6 +40,7 @@ use serenity::model::prelude::GuildId;
 use crate::config_loader::generate_bot_toml;
 use std::time::Duration;
 use typemap::Key;
+use threadpool::ThreadPool;
 use crate::thread_interfacer::ThreadCommunication;
 
 
@@ -226,6 +229,7 @@ fn help(ctx: &mut Context, msg: &Message)->CommandResult{
 // Current Commands: play, search, skip, ping, queue
 
 /*
+
 #[command]
 async fn example(ctx : &Context, msg: &Message, args: Args) -> CommandResult{
 
@@ -238,6 +242,7 @@ basic command template, ur welcome future lewis
 //servers (guilds) only
 #[only_in(guilds)]
 async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    println!("a");
     let url = match args.single::<String>() {
         Ok(url) => url,
         Err(_) => {
@@ -252,7 +257,8 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     }
 
     let (s,r) = crossbeam::crossbeam_channel::unbounded();
-    server_thread::start_music(ctx,msg,)
+    server_thread::start_music(ctx.clone(),msg.clone(),r).await;
+    Ok(())
 
 
 
@@ -413,7 +419,7 @@ pub async fn join_channel(ctx : &Context, msg : &Message) -> bool{
     };
 
 
-    let mut manager_lock = ctx.data.read().await.get::<VoiceManager>().cloned().expect("Expected VoiceManager in ShareMap.");;
+    let mut manager_lock = ctx.data.read().await.get::<VoiceManager>().cloned().expect("Expected VoiceManager in ShareMap.");
     let mut manager = manager_lock.lock().await;
 
     if manager.join(guild_id, connect_to).is_some() {
