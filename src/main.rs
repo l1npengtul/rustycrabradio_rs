@@ -1,11 +1,6 @@
-mod event;
-mod error;
-
 #[macro_use]
 extern crate serenity;
 extern crate typemap;
-extern crate crossbeam;
-extern crate threadpool;
 
 use std::{collections::{HashMap, HashSet}, sync::Arc, thread};
 use serenity::{
@@ -42,15 +37,19 @@ use std::time::Duration;
 use typemap::Key;
 use threadpool::ThreadPool;
 use crate::thread_interfacer::ThreadCommunication;
+use std::cell::RefCell;
 
+mod loader;
+mod error;
+mod threading;
 
-mod config_loader;
-mod server_thread;
-mod thread_interfacer;
+use loader::config_loader;
+use error::{handler_error,video_error};
 
-// IntelliJ-Rust is so slow i want to cri
-// I cri everi tiem
-
+// thread local statics to store a hashmap that cannot be freed
+thread_local! {
+    pub static QUEUE_AND_THREADS : RefCell<HashMap<String,String>> = HashMap::new();
+}
 
 struct SearchBoxMessage{
 
